@@ -15,18 +15,19 @@ import random
 from sklearn.cluster import MeanShift, estimate_bandwidth
 from itertools import cycle
 
-def kmeans_clustering( true_k,np_attr ):
+def kmeans_clustering(np_attr,output_to_excel,code ):
+    true_k = int(sys.argv[1])
     model = KMeans(n_clusters=true_k, init="k-means++", random_state=170, max_iter=100, n_init=1)
     model.fit(np_attr)
     clusters = model.labels_.tolist()
-
     order_centroids = model.cluster_centers_.argsort()[:,::-1]
     print("The cluster centroids are: \n", model.cluster_centers_)
     print("Cluster", model.labels_)
-
     clusters = model.labels_
     print()
     print("Sum of distances of samples to their closest cluster center: ", model.inertia_)
+    if output_to_excel == True:
+        output(model.labels_,code)
     return model.inertia_, model.labels_
 
 def normalizing(np_attr):
@@ -34,7 +35,7 @@ def normalizing(np_attr):
     np_attr = preprocessing.scale(np_attr)
     return np_attr
 
-def affinity_propagation_clustering(np_attr,keys,normalized):
+def affinity_propagation_clustering(np_attr,keys,normalized,code,output_to_excel):
     # normalize data, see http://scikit-learn.org/stable/modules/preprocessing.html for differet methods
     if normalized == True:
         np_attr = normalizing(np_attr)
@@ -66,8 +67,9 @@ def affinity_propagation_clustering(np_attr,keys,normalized):
     plt.xlabel('X axis')
     plt.ylabel('Y axis')
     plt.show()
-
-def meanshift_clustering(np_attr,keys,normalized):
+    if output_to_excel == True:
+        output(af.labels_,code)
+def meanshift_clustering(np_attr,keys,normalized,code,output_to_excel):
     if normalized == True:
         np_attr = normalizing(np_attr)
     bandwidth = estimate_bandwidth(np_attr, quantile=0.2, n_samples=1058)
@@ -92,6 +94,9 @@ def meanshift_clustering(np_attr,keys,normalized):
                  markeredgecolor='k', markersize=14)
     plt.title('Estimated number of clusters: %d' % n_clusters_)
     plt.show()
+    if output_to_excel == True:
+        output(ms.labels_,code)
+
 def output(labels,code):
     time = {}
     keys = list(code.keys())
@@ -126,15 +131,10 @@ def output(labels,code):
         sheet.cell(row=i, column=len(clusters) + 6).value = clusters[i]['time']
     book.save("main.xlsx")
 
-
-
-
-
 wb = openpyxl.load_workbook('data.xlsx')
 data = wb.get_sheet_by_name("Sheet1")
 length = 1063
 i = 1
-
 code = {}
 attribute = []
 
@@ -165,12 +165,12 @@ keys = list(code.keys())
 np_attr=np.asarray(attribute)
 
 
-print(sys.argv[1])
-true_k = int(sys.argv[1])
-meanshift_clustering(np_attr,keys,False)
-#affinity_propagation_clustering(np_attr,keys,False)
-#inertia,labels = kmeans_clustering(true_k,np_attr)
-#output(labels,code)
+
+
+meanshift_clustering(np_attr,keys,False,code,False)
+#affinity_propagation_clustering(np_attr,keys,False,code,False)
+#inertia,labels = kmeans_clustering(np_attr,True,code)
+
 
 #plt.plot(initial)
 #plt.show()
