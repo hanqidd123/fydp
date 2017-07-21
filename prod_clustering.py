@@ -187,7 +187,7 @@ keys = list(code.keys())
 np_attr=np.asarray(attribute)
 #meanshift_clustering(np_attr,keys,True,code,True)
 #affinity_propagation_clustering(np_attr,keys,True,code,True)
-kmeans_clustering(np_attr,False,code,True)
+kmeans_clustering(np_attr,True,code,False)
 
 
 #plt.plot(initial)
