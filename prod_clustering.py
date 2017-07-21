@@ -14,21 +14,31 @@ from sklearn.datasets.samples_generator import make_blobs
 import random
 from sklearn.cluster import MeanShift, estimate_bandwidth
 from itertools import cycle
+from sklearn.metrics import silhouette_samples, silhouette_score
 
-def kmeans_clustering(np_attr,output_to_excel,code ):
-    true_k = int(sys.argv[1])
-    model = KMeans(n_clusters=true_k, init="k-means++", random_state=170, max_iter=100, n_init=1)
-    model.fit(np_attr)
-    clusters = model.labels_.tolist()
-    order_centroids = model.cluster_centers_.argsort()[:,::-1]
-    print("The cluster centroids are: \n", model.cluster_centers_)
-    print("Cluster", model.labels_)
-    clusters = model.labels_
-    print()
-    print("Sum of distances of samples to their closest cluster center: ", model.inertia_)
-    if output_to_excel == True:
-        output(model.labels_,code)
-    return model.inertia_, model.labels_
+def kmeans_clustering(np_attr,output_to_excel,code,elbow ):
+    s = []
+    if elbow == True:
+        Ks = range(1,20)
+        km = [KMeans(n_clusters=i) for i in Ks]
+        score = [km[i].fit(np_attr).score(np_attr) for i in range(len(km))]
+        plt.plot(Ks, score)
+        plt.show()
+    else:
+        true_k = 4
+        model = KMeans(n_clusters=true_k, init="k-means++", random_state=170, max_iter=100, n_init=1)
+        model.fit(np_attr)
+
+        clusters = model.labels_.tolist()
+        order_centroids = model.cluster_centers_.argsort()[:,::-1]
+        print("The cluster centroids are: \n", model.cluster_centers_)
+        print("Cluster", model.labels_)
+        clusters = model.labels_
+        print()
+        print("Sum of distances of samples to their closest cluster center: ", model.inertia_)
+        if output_to_excel == True:
+            output(model.labels_,code)
+
 
 def normalizing(np_attr):
     np_attr = np_attr.astype(np.float)
@@ -44,7 +54,7 @@ def affinity_propagation_clustering(np_attr,keys,normalized,code,output_to_excel
 
     #labels_true = random.sample(range(1, 1059), 1058)
     labels_true = keys
-    af = AffinityPropagation(preference=-100).fit(labels_true)
+    af = AffinityPropagation(preference=-100).fit(np_attr)
     cluster_centers_indices = af.cluster_centers_indices_
     labels = af.labels_
     print(len(set(labels)))
@@ -62,13 +72,25 @@ def affinity_propagation_clustering(np_attr,keys,normalized,code,output_to_excel
     # set colors for the clusters
 
 
-    plt.scatter(np_attr[:, 0], np_attr[:, 1])
-    plt.gray()
-    plt.xlabel('X axis')
-    plt.ylabel('Y axis')
+    plt.close('all')
+    plt.figure(1)
+    plt.clf()
+
+    colors = cycle('bgrcmykbgrcmykbgrcmykbgrcmyk')
+    for k, col in zip(range(n_clusters_), colors):
+        class_members = labels == k
+        cluster_center = np_attr[cluster_centers_indices[k]]
+        plt.plot(np_attr[class_members, 0], np_attr[class_members, 1], col + '.')
+        plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col,
+                 markeredgecolor='k', markersize=14)
+        for x in np_attr[class_members]:
+            plt.plot([cluster_center[0], x[0]], [cluster_center[1], x[1]], col)
+
+    plt.title('Estimated number of clusters: %d' % n_clusters_)
     plt.show()
     if output_to_excel == True:
         output(af.labels_,code)
+
 def meanshift_clustering(np_attr,keys,normalized,code,output_to_excel):
     if normalized == True:
         np_attr = normalizing(np_attr)
@@ -131,7 +153,7 @@ def output(labels,code):
         sheet.cell(row=i, column=len(clusters) + 6).value = clusters[i]['time']
     book.save("main.xlsx")
 
-wb = openpyxl.load_workbook('data.xlsx')
+wb = openpyxl.load_workbook('production_data.xlsx')
 data = wb.get_sheet_by_name("Sheet1")
 length = 1063
 i = 1
@@ -163,13 +185,9 @@ while data.cell(row=i, column=0).value is not None:
 
 keys = list(code.keys())
 np_attr=np.asarray(attribute)
-
-
-
-
-meanshift_clustering(np_attr,keys,False,code,False)
-#affinity_propagation_clustering(np_attr,keys,False,code,False)
-#inertia,labels = kmeans_clustering(np_attr,True,code)
+#meanshift_clustering(np_attr,keys,True,code,True)
+#affinity_propagation_clustering(np_attr,keys,True,code,True)
+kmeans_clustering(np_attr,False,code,True)
 
 
 #plt.plot(initial)
